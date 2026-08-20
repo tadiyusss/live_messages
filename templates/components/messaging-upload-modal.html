@@ -1,0 +1,63 @@
+<div x-show="showUploadModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="showUploadModal = false">
+	<div x-show="showUploadModal" x-transition.opacity class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" @click="showUploadModal = false"></div>
+	<div x-show="showUploadModal" x-transition class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200">
+		<div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
+			<div>
+				<h2 class="font-semibold text-zinc-950"> Send files </h2>
+				<p class="mt-0.5 text-xs text-zinc-400"> to John </p>
+			</div>
+			<button type="button" @click="showUploadModal = false" class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18" />
+					<line x1="6" y1="6" x2="18" y2="18" />
+				</svg>
+			</button>
+		</div>
+		<div class="p-5">
+
+            <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 px-4 py-8 text-center transition hover:border-zinc-400 hover:bg-zinc-50">
+				<div class="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" y1="3" x2="12" y2="15" />
+					</svg>
+				</div>
+				<p class="text-sm font-medium text-zinc-700">
+					<span class="text-zinc-900 underline"> Click to upload </span> or drag and drop
+				</p>
+				<p class="text-xs text-zinc-400"> PNG, JPG, PDF, DOCX up to 10MB each </p>
+				<input type="file" name="files" multiple accept=".png,.jpg,.jpeg,.pdf,.docx" class="hidden" />
+			</label>
+
+            <div class="mt-4">
+				<div class="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+					<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-zinc-200 text-zinc-500">
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+							<polyline points="14 2 14 8 20 8" />
+						</svg>
+					</div>
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-sm font-medium text-zinc-800"> document.pdf </p>
+						<p class="text-xs text-zinc-400"> 2.4 MB </p>
+					</div>
+					<button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+					</button>
+				</div>
+			</div>
+		</div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4">
+			<p class="text-xs text-zinc-400"> 1 file selected </p>
+			<div class="flex items-center gap-2">
+				<button type="button" @click="showUploadModal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"> Cancel </button>
+				<button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"> Send </button>
+			</div>
+		</div>
+	</div>
+</div>

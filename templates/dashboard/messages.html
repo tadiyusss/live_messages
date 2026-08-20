@@ -6,205 +6,42 @@
 		<title>Messages</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
         <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 	</head>
 	<body class="bg-white text-zinc-800">
 		<div x-data="chat_app()" x-cloak class="h-screen w-full flex overflow-hidden">
 			{% include 'components/messaging-sidebar.html' %}
 			{% include 'components/messaging-content.html' %}
+			{% include 'components/messaging-upload-modal.html' %}
 		</div>
+		<script src="{{ url_for('live_messages.static', filename='js/socketio.js') }}"></script>
 		<script>
 			function chat_app() {
 				return {
 					search: '',
-					mobileView: 'list',
-					activeContactId: 1,
+					mobileView: 'chat',
 					newMessage: '',
-					typing: false,
-					contacts: [
-                        {
-                            id: 1,
-                            name: 'Amara Osei',
-                            avatar: 'https://i.pravatar.cc/150?img=47',
-                            lastMessage: 'Sounds good, see you then!',
-                            time: '2m',
-                            unread: 2,
-                            online: true
-                        }, 
-                        {
-                            id: 2,
-                            name: 'Liam Chen',
-                            avatar: 'https://i.pravatar.cc/150?img=12',
-                            lastMessage: 'I pushed the update to staging',
-                            time: '18m',
-                            unread: 0,
-                            online: true
-                        }, 
-                    ],
-					messages: {
-						1: [{
-							id: 1,
-							sender: 'them',
-							text: 'Hey! Are we still on for the design review tomorrow?',
-							time: '9:12 AM'
-						}, {
-							id: 2,
-							sender: 'me',
-							text: 'Yes! I’ll bring the updated mockups.',
-							time: '9:14 AM'
-						}, {
-							id: 3,
-							sender: 'them',
-							text: 'Perfect, I’ll book the room for 10.',
-							time: '9:15 AM'
-						}, {
-							id: 4,
-							sender: 'them',
-							text: 'Sounds good, see you then!',
-							time: '9:16 AM'
-						}, ],
-						2: [{
-							id: 1,
-							sender: 'them',
-							text: 'Just merged the auth branch.',
-							time: '8:40 AM'
-						}, {
-							id: 2,
-							sender: 'me',
-							text: 'Nice, running the tests now.',
-							time: '8:42 AM'
-						}, {
-							id: 3,
-							sender: 'them',
-							text: 'I pushed the update to staging',
-							time: '8:50 AM'
-						}, ],
-						3: [{
-							id: 1,
-							sender: 'me',
-							text: 'Did you see the client’s reply?',
-							time: '7:02 AM'
-						}, {
-							id: 2,
-							sender: 'them',
-							text: 'Yes, they loved the palette 😄',
-							time: '7:05 AM'
-						}, {
-							id: 3,
-							sender: 'them',
-							text: 'Haha yes exactly 😂',
-							time: '7:06 AM'
-						}, ],
-						4: [{
-							id: 1,
-							sender: 'them',
-							text: 'Hi, hope you’re doing well.',
-							time: 'Yesterday'
-						}, {
-							id: 2,
-							sender: 'them',
-							text: 'Can you send the invoice?',
-							time: '11:30 AM'
-						}, ],
-						5: [{
-							id: 1,
-							sender: 'me',
-							text: 'The report is ready for review.',
-							time: 'Yesterday'
-						}, {
-							id: 2,
-							sender: 'them',
-							text: 'Thanks for the quick turnaround',
-							time: 'Yesterday'
-						}, ],
-						6: [{
-							id: 1,
-							sender: 'them',
-							text: 'Something came up on Thursday.',
-							time: 'Yesterday'
-						}, {
-							id: 2,
-							sender: 'them',
-							text: 'Let’s reschedule to Friday',
-							time: 'Yesterday'
-						}, ],
-						7: [{
-							id: 1,
-							sender: 'me',
-							text: 'Locking in the rate we discussed?',
-							time: 'Mon'
-						}, {
-							id: 2,
-							sender: 'them',
-							text: 'Deal, talk soon.',
-							time: 'Mon'
-						}, ],
-						8: [{
-							id: 1,
-							sender: 'them',
-							text: 'Attached the files below',
-							time: 'Mon'
-						}, ],
-					},
-					autoReplies: ["Got it, thanks!", "Sounds good to me.", "I'll take a look and get back to you.", "Perfect, appreciate it 🙌", "Makes sense — let's do that.", ],
-					get filteredContacts() {
-						const q = this.search.trim().toLowerCase();
-						if (!q) return this.contacts;
-						return this.contacts.filter(c => c.name.toLowerCase().includes(q));
-					},
-					get activeContact() {
-						return this.contacts.find(c => c.id === this.activeContactId) || null;
-					},
-					get currentMessages() {
-						return this.messages[this.activeContactId] || [];
-					},
-					selectContact(id) {
-						this.activeContactId = id;
-						this.mobileView = 'chat';
-						const contact = this.contacts.find(c => c.id === id);
-						if (contact) contact.unread = 0;
-						this.$nextTick(() => this.scrollToBottom());
-					},
-					send() {
-						const text = this.newMessage.trim();
-						if (!text) return;
-						if (!this.messages[this.activeContactId]) this.messages[this.activeContactId] = [];
-						const time = new Date().toLocaleTimeString([], {
-							hour: 'numeric',
-							minute: '2-digit'
-						});
-						this.messages[this.activeContactId].push({
-							id: Date.now(),
-							sender: 'me',
-							text,
-							time,
-						});
-						this.newMessage = '';
-						this.$nextTick(() => this.scrollToBottom());
-						this.typing = true;
-						this.$nextTick(() => this.scrollToBottom());
-						setTimeout(() => {
-							this.typing = false;
-							const reply = this.autoReplies[Math.floor(Math.random() * this.autoReplies.length)];
-							const replyTime = new Date().toLocaleTimeString([], {
-								hour: 'numeric',
-								minute: '2-digit'
-							});
-							this.messages[this.activeContactId].push({
-								id: Date.now() + 1,
-								sender: 'them',
-								text: reply,
-								time: replyTime,
-							});
-							this.$nextTick(() => this.scrollToBottom());
-						}, 1300);
-					},
+					socketio: null,
+					showUploadModal: true,
 					scrollToBottom() {
 						const el = this.$refs.messagesContainer;
 						if (el) el.scrollTop = el.scrollHeight;
 					},
+					init(){
+						this.socketio = io();
+
+						this.socketio.on('connect', () => {
+							console.log('Connected to Socket.IO server');
+						});
+
+						this.socketio.on('disconnect', () => {
+							console.log('Disconnected from Socket.IO server');
+						});
+
+						this.socketio.on('user_connected', (data) => {
+							console.log('User connected:', data);
+						});	
+
+					}
 				};
 			}
 		</script>
