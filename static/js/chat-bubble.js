@@ -1,11 +1,11 @@
 function chat_support() {
 	return {
-		isOpen: false,
+		open_chat_bubble: true,
 		newMessage: '',
-		formData: {
-			name: '',
+		start_chat_form_data: {
+			fullname: '',
 			email: '',
-			subject: '',
+			phone_number: '',
 		},
 		userInfo: {
 			name: '',
@@ -33,22 +33,22 @@ function chat_support() {
 		],
 
 		open() {
-			this.isOpen = true;
+			this.open_chat_bubble = true;
 		},
 
 		close() {
-			this.isOpen = false;
+			this.open_chat_bubble = false;
 		},
 
 		startChat() {
-			if (!this.formData.name || !this.formData.email) return;
+			if (!this.start_chat_form_data.name || !this.start_chat_form_data.email || !this.start_chat_form_data.phone_number) return;
 			this.userInfo = {
-				...this.formData
+				...this.start_chat_form_data
 			};
-			this.formData = {
+			this.start_chat_form_data = {
 				name: '',
 				email: '',
-				subject: ''
+				phone_number: ''
 			};
 			this.$nextTick(() => this.scrollToBottom());
 		},
