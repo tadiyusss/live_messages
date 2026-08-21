@@ -45,17 +45,19 @@
 				</div>
 			</div>
 		</button>
-		<button class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200">
-			<div class="min-w-0 flex-1">
-				<div class="flex items-center justify-between gap-2">
-					<p class="text-sm truncate text-zinc-700 font-medium">Jane Doe</p>
-					<span class="text-[11px] text-zinc-400 shrink-0">2:30 PM</span>
+		{% for client in clients %}
+			<button class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200">
+				<div class="min-w-0 flex-1">
+					<div class="flex items-center justify-between gap-2">
+						<p class="text-sm truncate text-zinc-700 font-medium">{{ client.fullname }}</p>
+						<span class="text-[11px] text-zinc-400 shrink-0">{{ client.last_message.created_at.strftime('%I:%M %p') if client.last_message else '' }}</span>
+					</div>
+					<div class="flex items-center justify-between gap-2 mt-0.5">
+						<p class="text-xs truncate text-zinc-600">{{ client.last_message.content if client.last_message else 'No messages yet' }}</p>
+					</div>
 				</div>
-				<div class="flex items-center justify-between gap-2 mt-0.5">
-					<p class="text-xs truncate text-zinc-600">This is the last message</p>
-				</div>
-			</div>
-		</button>
+			</button>
+		{% endfor %}
 		<p class="px-5 py-6 text-sm text-zinc-400 text-center">No contacts found.</p>
 	</div>
 </aside>
