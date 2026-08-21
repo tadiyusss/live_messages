@@ -1,12 +1,15 @@
 function chat_support() {
 	return {
+		socketio: null,
 		open_chat_bubble: true,
+		client_uuid: localStorage.getItem('client_uuid') || null,
 		newMessage: '',
 		start_chat_form_data: {
 			fullname: '',
 			email: '',
 			phone_number: '',
 		},
+		start_chat_form_errors: {},
 		userInfo: {
 			name: '',
 			email: '',
@@ -40,17 +43,8 @@ function chat_support() {
 			this.open_chat_bubble = false;
 		},
 
-		startChat() {
-			if (!this.start_chat_form_data.name || !this.start_chat_form_data.email || !this.start_chat_form_data.phone_number) return;
-			this.userInfo = {
-				...this.start_chat_form_data
-			};
-			this.start_chat_form_data = {
-				name: '',
-				email: '',
-				phone_number: ''
-			};
-			this.$nextTick(() => this.scrollToBottom());
+		start_chat() {
+			this.socketio.emit('start_chat', this.start_chat_form_data);
 		},
 
 		sendMessage() {
@@ -96,5 +90,25 @@ function chat_support() {
 			const el = this.$refs.messagesContainer;
 			if (el) el.scrollTop = el.scrollHeight;
 		},
+		init(){
+			this.socketio = io();
+
+			this.socketio.on('connect', () => {
+				if (this.client_uuid) {
+					this.socketio.emit('history', { client_uuid: this.client_uuid });
+				}
+			});
+
+			this.socketio.on('start_chat', (data) => {
+				console.log('Received start_chat event:', data);
+				if (data.status === "error") {
+					this.start_chat_form_errors = data.errors || {};
+				} else if (data.status === "success") {
+					this.start_chat_form_errors = {};
+					this.client_uuid = data.client_uuid;
+					localStorage.setItem('client_uuid', data.client_uuid);
+				}
+			});
+		}
 	};
 }

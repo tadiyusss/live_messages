@@ -6,7 +6,8 @@ from flask import request
 def inject_live_messages_form():
     if not re.match(r'^/dashboard', request.path):
         return dict(live_messages_form=StartLiveChatForm())
-
+    else:
+        return dict(live_messages_form=None)
 
 context_processors = [inject_live_messages_form]
 
