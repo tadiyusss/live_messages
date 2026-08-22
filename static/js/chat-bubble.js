@@ -4,6 +4,7 @@ function chat_support() {
 		open_chat_bubble: true,
 		client_uuid: localStorage.getItem('client_uuid') || null,
 		new_message: '',
+		connected: false,
 		start_chat_form_data: {
 			fullname: '',
 			email: '',
@@ -55,9 +56,14 @@ function chat_support() {
 			this.socketio = io();
 
 			this.socketio.on('connect', (data) => {
+				this.connected = true;
 				if (this.client_uuid) {
 					this.socketio.emit('validate_client_uuid', { client_uuid: this.client_uuid });
 				}
+			});
+
+			this.socketio.on('disconnect', () => {
+				this.connected = false;
 			});
 
 			this.socketio.on('validate_client_uuid', (data) => {

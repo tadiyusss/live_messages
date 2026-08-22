@@ -1,4 +1,4 @@
-<aside class="w-full md:w-[22rem] lg:w-[24rem] shrink-0 md:flex flex-col border-r border-zinc-200 bg-gray-50" :class="mobileView === 'chat' ? 'hidden md:flex' : 'flex'">
+<aside class="w-full md:w-[22rem] lg:w-[24rem] shrink-0 md:flex flex-col border-r border-zinc-200 bg-gray-50" :class="mobile_view === 'chat' ? 'hidden md:flex' : 'flex'">
 	<div class="px-5 pt-6 pb-4">
 		<div class="flex items-center justify-between mb-5">
 			<div class="flex items-center space-x-2"> 
@@ -33,31 +33,18 @@
 		</div>
 	</div>
 	<div class="flex-1 overflow-y-auto pb-4">
-		<button class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition bg-zinc-200 hover:bg-zinc-200">
-			<div class="min-w-0 flex-1">
-				<div class="flex items-center justify-between gap-2">
-					<p class="text-sm truncate text-zinc-950 font-semibold">John Doe</p>
-					<span class="text-[11px] text-zinc-400 shrink-0">9:40 AM</span>
-				</div>
-				<div class="flex items-center justify-between gap-2 mt-0.5">
-					<p class="text-xs truncate text-zinc-600">This is the last message</p>
-					<span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-zinc-900 text-[10px] font-bold text-white flex items-center justify-center">1</span>
-				</div>
-			</div>
-		</button>
-		{% for client in clients %}
-			<button class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200">
+		<template x-for="client in clients">
+			<button @click="select_user(client)" class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200" :class="selected_user === client ? 'bg-zinc-200' : ''" x-show="is_user_visible(client.fullname)">
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center justify-between gap-2">
-						<p class="text-sm truncate text-zinc-700 font-medium">{{ client.fullname }}</p>
-						<span class="text-[11px] text-zinc-400 shrink-0">{{ client.last_message.created_at.strftime('%I:%M %p') if client.last_message else '' }}</span>
+						<p class="text-sm truncate text-zinc-700 font-medium" x-text="client.fullname"></p>
+						<span class="text-[11px] text-zinc-400 shrink-0" x-text="client.last_message ? client.last_message.created_at : ''"></span>
 					</div>
 					<div class="flex items-center justify-between gap-2 mt-0.5">
-						<p class="text-xs truncate text-zinc-600">{{ client.last_message.content if client.last_message else 'No messages yet' }}</p>
+						<p class="text-xs truncate text-zinc-600" x-text="client.last_message ? client.last_message.content : 'No messages yet'" :class="client.last_message ? '' : 'italic'"></p>
 					</div>
 				</div>
 			</button>
-		{% endfor %}
-		<p class="px-5 py-6 text-sm text-zinc-400 text-center">No contacts found.</p>
+		</template>
 	</div>
 </aside>

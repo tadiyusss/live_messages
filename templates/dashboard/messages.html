@@ -14,36 +14,6 @@
 			{% include 'components/messaging-upload-modal.html' %}
 		</div>
 		<script src="{{ url_for('live_messages.static', filename='js/socketio.js') }}"></script>
-		<script>
-			function chat_app() {
-				return {
-					search: '',
-					mobileView: 'chat',
-					newMessage: '',
-					socketio: null,
-					showUploadModal: false,
-					scrollToBottom() {
-						const el = this.$refs.messagesContainer;
-						if (el) el.scrollTop = el.scrollHeight;
-					},
-					init(){
-						this.socketio = io();
-
-						this.socketio.on('connect', () => {
-							console.log('Connected to Socket.IO server');
-						});
-
-						this.socketio.on('disconnect', () => {
-							console.log('Disconnected from Socket.IO server');
-						});
-
-						this.socketio.on('user_connected', (data) => {
-							console.log('User connected:', data);
-						});	
-
-					}
-				};
-			}
-		</script>
+		<script src="{{ url_for('live_messages.static', filename='js/chat.js') }}"></script>
 	</body>
 </html>
