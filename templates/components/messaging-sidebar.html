@@ -42,6 +42,7 @@
 					</div>
 					<div class="flex items-center justify-between gap-2 mt-0.5">
 						<p class="text-xs truncate text-zinc-600" x-text="client.last_message ? client.last_message.content : 'No messages yet'" :class="client.last_message ? '' : 'italic'"></p>
+						<span x-show="client.unread_count > 0" x-cloak class="shrink-0 flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-zinc-800 text-white text-[11px] font-medium leading-none" x-text="client.unread_count"></span>
 					</div>
 				</div>
 			</button>

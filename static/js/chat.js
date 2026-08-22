@@ -23,6 +23,7 @@ function chat_app() {
 
 		select_client(client) {
 			this.selected_client = client;
+			client.unread_count = 0;
 			this.mobile_view = 'chat';
 			this.socket.emit('get_history', { client_uuid: client.uuid });
 			this.$nextTick(() => {
@@ -49,7 +50,21 @@ function chat_app() {
 			});
 
 			this.socket.on('clients_data', (data) => {
-				this.clients = data.clients;
+				this.clients = data.clients.map((client) => ({ ...client, unread_count: 0 }));
+			});
+
+			this.socket.on('sidebar_update', (data) => {
+				const updated_client = data.client;
+				const existing_client = this.clients.find((client) => client.uuid === updated_client.uuid);
+				if (!existing_client) {
+					this.clients.unshift({ ...updated_client, unread_count: 0 });
+					return;
+				}
+				existing_client.last_message = updated_client.last_message;
+				const is_viewing = this.selected_client && this.selected_client.uuid === updated_client.uuid;
+				if (data.message_sender === 'client' && !is_viewing) {
+					existing_client.unread_count += 1;
+				}
 			});
 
 			this.socket.on('get_history', (data) => {

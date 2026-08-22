@@ -9,6 +9,7 @@ from extensions.live_messages.utils.messages import format_time, get_client_rece
 
 ALLOWED_ROLES = ['Administrator', 'Support Agent']
 CONNECTED_USERS = {}
+ADMIN_ROOM = 'admins'
 
 
 def serialize_message(message):
@@ -34,6 +35,19 @@ def get_message_history(client_uuid):
     return [serialize_message(message) for message in messages]
 
 
+def serialize_client(client):
+    """
+    Build the sidebar payload for a client, shared by the initial admin connection and live sidebar updates.
+    """
+    return {
+        'uuid': client.uuid,
+        'fullname': client.fullname,
+        'email': client.email,
+        'phone_number': client.phone_number,
+        'last_message': get_client_recent_message_data(client.uuid),
+    }
+
+
 @socketio.on('connect')
 def handle_connect():
     """
@@ -51,21 +65,13 @@ def handle_connect():
         return False
 
     clients = get_all_clients()
-    clients_data = [
-        {
-            'uuid': client.uuid,
-            'fullname': client.fullname,
-            'email': client.email,
-            'phone_number': client.phone_number,
-            'last_message': get_client_recent_message_data(client.uuid)
-        }
-        for client in clients
-    ]
+    clients_data = [serialize_client(client) for client in clients]
     CONNECTED_USERS[request.sid] = {
         'type': 'admin',
         'user': current_user,
         'current_room': None,
     }
+    join_room(ADMIN_ROOM)
     emit('clients_data', {'clients': clients_data})
 
 
@@ -132,7 +138,7 @@ def handle_get_history(data):
 @socketio.on('start_chat')
 def handle_start_chat(data):
     """
-    Handle StartLiveChatForm submission from the client. Validate the form and create a new LiveChatClient if valid.
+    Handle StartLiveChatForm submission from the client, create a new LiveChatClient if valid, and announce it to the admin sidebar.
     """
     form = StartLiveChatForm(data=data, meta={'csrf': False})
     if not form.validate():
@@ -160,11 +166,16 @@ def handle_start_chat(data):
         'client_uuid': new_client.uuid
     })
 
+    emit('sidebar_update', {
+        'client': serialize_client(new_client),
+        'message_sender': None,
+    }, room=ADMIN_ROOM)
+
 
 @socketio.on('send_message')
 def handle_send_message(data):
     """
-    Handle a message sent by either an admin or a client and broadcast it to everyone in that client's room.
+    Handle a message sent by either an admin or a client, broadcast it to everyone in that client's room, and refresh the admin sidebar.
     """
     client_uuid = data.get('client_uuid')
     content = data.get('content')
@@ -201,3 +212,8 @@ def handle_send_message(data):
         'success': True,
         'messages': [serialize_message(new_message)]
     }, room=client_uuid)
+
+    emit('sidebar_update', {
+        'client': serialize_client(client),
+        'message_sender': sender,
+    }, room=ADMIN_ROOM)
