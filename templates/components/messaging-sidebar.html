@@ -34,7 +34,7 @@
 	</div>
 	<div class="flex-1 overflow-y-auto pb-4">
 		<template x-for="client in clients">
-			<button @click="select_user(client)" class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200" :class="selected_user === client ? 'bg-zinc-200' : ''" x-show="is_user_visible(client.fullname)">
+			<button @click="select_client(client)" class="relative cursor-pointer w-full flex items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-200" :class="selected_client === client ? 'bg-zinc-200' : ''" x-show="is_client_visible(client.fullname)">
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center justify-between gap-2">
 						<p class="text-sm truncate text-zinc-700 font-medium" x-text="client.fullname"></p>

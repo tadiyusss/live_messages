@@ -1,12 +1,12 @@
-<div x-show="showUploadModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="showUploadModal = false">
-	<div x-show="showUploadModal" x-transition.opacity class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" @click="showUploadModal = false"></div>
-	<div x-show="showUploadModal" x-transition class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200">
+<div x-show="show_upload_modal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="show_upload_modal = false">
+	<div x-show="show_upload_modal" x-transition.opacity class="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" @click="show_upload_modal = false"></div>
+	<div x-show="show_upload_modal" x-transition class="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200">
 		<div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
 			<div>
 				<h2 class="font-semibold text-zinc-950"> Send files </h2>
-				<p class="mt-0.5 text-xs text-zinc-400"> to John </p>
+				<p class="mt-0.5 text-xs text-zinc-400"> to <span x-text="selected_client ? selected_client.fullname : ''"></span> </p>
 			</div>
-			<button type="button" @click="showUploadModal = false" class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700">
+			<button type="button" @click="show_upload_modal = false" class="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<line x1="18" y1="6" x2="6" y2="18" />
 					<line x1="6" y1="6" x2="18" y2="18" />
@@ -55,7 +55,7 @@
         <div class="flex items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4">
 			<p class="text-xs text-zinc-400"> 1 file selected </p>
 			<div class="flex items-center gap-2">
-				<button type="button" @click="showUploadModal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"> Cancel </button>
+				<button type="button" @click="show_upload_modal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"> Cancel </button>
 				<button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"> Send </button>
 			</div>
 		</div>
