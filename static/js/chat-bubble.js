@@ -4,6 +4,9 @@ function chat_support() {
 		open_chat_bubble: true,
 		client_uuid: localStorage.getItem('client_uuid') || null,
 		new_message: '',
+		selected_file: null,
+		uploading_file: false,
+		upload_error: null,
 		connected: false,
 		start_chat_form_data: {
 			fullname: '',
@@ -39,6 +42,9 @@ function chat_support() {
 				text: message.content,
 				time: message.created_at,
 				name: message.name,
+				content_type: message.content_type,
+				content: message.content,
+				content_name: message.content_name,
 			};
 		},
 

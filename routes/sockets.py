@@ -5,48 +5,11 @@ from extensions.live_messages.forms.start_live_chat import StartLiveChatForm
 from extensions.live_messages.models import LiveChatClient, Messages
 from core.extensions import db
 from flask_socketio import emit, join_room, leave_room
-from extensions.live_messages.utils.messages import format_time, get_client_recent_message_data, is_client_uuid_valid, get_all_clients
+from extensions.live_messages.utils.messages import format_time, get_client_recent_message_data, is_client_uuid_valid, get_all_clients, get_unread_messages_count, mark_client_messages_read, get_message_history, serialize_client, serialize_message
 
 ALLOWED_ROLES = ['Administrator', 'Support Agent']
 CONNECTED_USERS = {}
 ADMIN_ROOM = 'admins'
-
-
-def serialize_message(message):
-    """
-    Build the message payload shared by every socket route that sends message data to the frontend.
-    """
-    return {
-        'uuid': message.uuid,
-        'client_uuid': message.client.uuid,
-        'sender': message.sender,
-        'name': 'Support' if message.sender == 'agent' else message.client.fullname,
-        'content': message.content,
-        'content_type': message.content_type,
-        'created_at': format_time(message.created_at),
-    }
-
-
-def get_message_history(client_uuid):
-    """
-    Fetch and serialize the full message history for a client, oldest first.
-    """
-    messages = Messages.query.join(LiveChatClient).filter(LiveChatClient.uuid == client_uuid).order_by(Messages.created_at.asc()).all()
-    return [serialize_message(message) for message in messages]
-
-
-def serialize_client(client):
-    """
-    Build the sidebar payload for a client, shared by the initial admin connection and live sidebar updates.
-    """
-    return {
-        'uuid': client.uuid,
-        'fullname': client.fullname,
-        'email': client.email,
-        'phone_number': client.phone_number,
-        'last_message': get_client_recent_message_data(client.uuid),
-    }
-
 
 @socketio.on('connect')
 def handle_connect():
@@ -110,11 +73,12 @@ def handle_validate_client_uuid(data):
 @socketio.on('get_history')
 def handle_get_history(data):
     """
-    Handle an admin request to load a client's message history, switching that admin's active room.
+    Handle an admin request to load a client's message history, switch that admin's active room, and mark the conversation as read.
     """
     client_uuid = data.get('client_uuid')
 
-    if not client_uuid or not is_client_uuid_valid(client_uuid):
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first() if client_uuid else None
+    if not client:
         emit('get_history', {
             'success': False,
             'error': 'Invalid client UUID.'
@@ -122,12 +86,15 @@ def handle_get_history(data):
         return
 
     connected_user = CONNECTED_USERS.get(request.sid)
-    if connected_user is not None:
+    if connected_user is not None and connected_user['type'] == 'admin':
         current_room = connected_user.get('current_room')
         if current_room:
             leave_room(current_room)
         join_room(client_uuid)
         connected_user['current_room'] = client_uuid
+
+        mark_client_messages_read(client_uuid)
+        emit('sidebar_update', {'client': serialize_client(client)}, room=ADMIN_ROOM)
 
     emit('get_history', {
         'success': True,
@@ -168,7 +135,6 @@ def handle_start_chat(data):
 
     emit('sidebar_update', {
         'client': serialize_client(new_client),
-        'message_sender': None,
     }, room=ADMIN_ROOM)
 
 
@@ -198,12 +164,17 @@ def handle_send_message(data):
     connected_user = CONNECTED_USERS.get(request.sid, {})
     sender = 'agent' if connected_user.get('type') == 'admin' else 'client'
     client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    is_already_being_viewed = any(
+        user.get('type') == 'admin' and user.get('current_room') == client_uuid
+        for user in CONNECTED_USERS.values()
+    )
 
     new_message = Messages(
         client_id=client.id,
         sender=sender,
         content=content,
-        content_type=content_type
+        content_type=content_type,
+        unread=sender == 'client' and not is_already_being_viewed
     )
     db.session.add(new_message)
     db.session.commit()
@@ -215,5 +186,4 @@ def handle_send_message(data):
 
     emit('sidebar_update', {
         'client': serialize_client(client),
-        'message_sender': sender,
     }, room=ADMIN_ROOM)

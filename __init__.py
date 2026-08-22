@@ -4,7 +4,7 @@ from .initialization.sidebar import initialize_sidebar
 from .initialization.context_processors import initialize_context_processors
 bp = Blueprint('live_messages', __name__, template_folder=TEMPLATE_FOLDER, static_folder=STATIC_FOLDER, static_url_path="/static/live_messages")
 
-from .routes import dashboard, sockets
+from .routes import dashboard, sockets, api
 
 def init_extension(app, db):
     with app.app_context():

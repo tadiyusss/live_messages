@@ -5,6 +5,8 @@ function chat_app() {
 		new_message: '',
 		socket: null,
 		show_upload_modal: false,
+		selected_file: null,
+		uploading_file: false,
 		selected_client: null,
 		clients: [],
 		connected: false,
@@ -38,6 +40,42 @@ function chat_app() {
 			this.new_message = '';
 		},
 
+		handle_file_selected(event) {
+			this.selected_file = event.target.files.length > 0 ? event.target.files[0] : null;
+		},
+
+		clear_selected_file() {
+			this.selected_file = null;
+			const input = this.$refs.file_input;
+			if (input) input.value = '';
+		},
+
+		format_file_size(size) {
+			if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+			if (size >= 1024) return `${(size / 1024).toFixed(1)} KB`;
+			return `${size} B`;
+		},
+
+		async upload_file() {
+			if (!this.selected_file || !this.selected_client || this.uploading_file) return;
+			this.uploading_file = true;
+			try {
+				const form_data = new FormData();
+				form_data.append('client_uuid', this.selected_client.uuid);
+				form_data.append('file', this.selected_file);
+				const response = await fetch('/live-messages/upload', { method: 'POST', body: form_data });
+				const data = await response.json();
+				if (data.success === false) {
+					console.error('Error uploading file:', data.error);
+					return;
+				}
+				this.clear_selected_file();
+				this.show_upload_modal = false;
+			} finally {
+				this.uploading_file = false;
+			}
+		},
+
 		init() {
 			this.socket = io();
 
@@ -50,21 +88,18 @@ function chat_app() {
 			});
 
 			this.socket.on('clients_data', (data) => {
-				this.clients = data.clients.map((client) => ({ ...client, unread_count: 0 }));
+				this.clients = data.clients;
 			});
 
 			this.socket.on('sidebar_update', (data) => {
 				const updated_client = data.client;
 				const existing_client = this.clients.find((client) => client.uuid === updated_client.uuid);
 				if (!existing_client) {
-					this.clients.unshift({ ...updated_client, unread_count: 0 });
+					this.clients.unshift(updated_client);
 					return;
 				}
 				existing_client.last_message = updated_client.last_message;
-				const is_viewing = this.selected_client && this.selected_client.uuid === updated_client.uuid;
-				if (data.message_sender === 'client' && !is_viewing) {
-					existing_client.unread_count += 1;
-				}
+				existing_client.unread_count = updated_client.unread_count;
 			});
 
 			this.socket.on('get_history', (data) => {

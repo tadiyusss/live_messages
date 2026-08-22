@@ -26,11 +26,11 @@
 				<p class="text-sm font-medium text-zinc-700">
 					<span class="text-zinc-900 underline"> Click to upload </span> or drag and drop
 				</p>
-				<p class="text-xs text-zinc-400"> PNG, JPG, PDF, DOCX up to 10MB each </p>
-				<input type="file" name="files" multiple accept=".png,.jpg,.jpeg,.pdf,.docx" class="hidden" />
+				<p class="text-xs text-zinc-400"> Any file type up to 100MB </p>
+				<input type="file" name="file" x-ref="file_input" @change="handle_file_selected($event)" class="hidden" />
 			</label>
 
-            <div class="mt-4">
+            <div class="mt-4" x-show="selected_file" x-cloak>
 				<div class="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5">
 					<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-zinc-200 text-zinc-500">
 						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -39,10 +39,10 @@
 						</svg>
 					</div>
 					<div class="min-w-0 flex-1">
-						<p class="truncate text-sm font-medium text-zinc-800"> document.pdf </p>
-						<p class="text-xs text-zinc-400"> 2.4 MB </p>
+						<p class="truncate text-sm font-medium text-zinc-800" x-text="selected_file ? selected_file.name : ''"></p>
+						<p class="text-xs text-zinc-400" x-text="selected_file ? format_file_size(selected_file.size) : ''"></p>
 					</div>
-					<button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700">
+					<button type="button" @click="clear_selected_file()" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700">
 						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
 							<line x1="18" y1="6" x2="6" y2="18" />
 							<line x1="6" y1="6" x2="18" y2="18" />
@@ -53,10 +53,10 @@
 		</div>
 
         <div class="flex items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4">
-			<p class="text-xs text-zinc-400"> 1 file selected </p>
+			<p class="text-xs text-zinc-400" x-text="selected_file ? '1 file selected' : 'No file selected'"></p>
 			<div class="flex items-center gap-2">
 				<button type="button" @click="show_upload_modal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"> Cancel </button>
-				<button type="submit" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"> Send </button>
+				<button type="button" @click="upload_file()" :disabled="!selected_file || !selected_client || uploading_file || !connected" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed" x-text="uploading_file ? 'Sending...' : 'Send'"></button>
 			</div>
 		</div>
 	</div>
