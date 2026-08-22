@@ -1,6 +1,7 @@
 from datetime import datetime
 from core.extensions import db
 import uuid
+import os
 
 SENDER_CHOICES = ('client', 'agent')
 CONTENT_TYPES = ('text', 'image', 'file')
@@ -21,3 +22,11 @@ class Messages(db.Model):
     unread = db.Column(db.Boolean, default=True, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def delete(self):
+        if self.content_type in ['image', 'file']:
+            file_path = os.path.join('media', self.content)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        db.session.delete(self)
+        db.session.commit()

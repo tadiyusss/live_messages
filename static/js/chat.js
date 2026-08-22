@@ -63,7 +63,7 @@ function chat_app() {
 				const form_data = new FormData();
 				form_data.append('client_uuid', this.selected_client.uuid);
 				form_data.append('file', this.selected_file);
-				const response = await fetch('/live-messages/upload', { method: 'POST', body: form_data });
+				const response = await fetch('/api/live-messages/upload', { method: 'POST', body: form_data });
 				const data = await response.json();
 				if (data.success === false) {
 					console.error('Error uploading file:', data.error);

@@ -15,7 +15,7 @@ from .sockets import ALLOWED_ROLES, ADMIN_ROOM, CONNECTED_USERS
 
 IMAGE_EXTENSIONS = ('png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp')
 
-@bp.route('/live-messages/upload', methods=['POST'])
+@bp.route('/api/live-messages/upload', methods=['POST'])
 @login_required
 @roles_required(['Administrator', 'Support Agent'])
 def upload_file():

@@ -4,9 +4,6 @@ function chat_support() {
 		open_chat_bubble: true,
 		client_uuid: localStorage.getItem('client_uuid') || null,
 		new_message: '',
-		selected_file: null,
-		uploading_file: false,
-		upload_error: null,
 		connected: false,
 		start_chat_form_data: {
 			fullname: '',
@@ -77,6 +74,7 @@ function chat_support() {
 				if (data.success === false) {
 					localStorage.removeItem('client_uuid');
 					this.client_uuid = null;
+					this.messages = [];
 				}
 			});
 
@@ -101,6 +99,7 @@ function chat_support() {
 			this.socket.on('send_message', (data) => {
 				if (data.success === false) {
 					console.error('Error sending message:', data.error);
+					this.new_message = data.message;
 					return;
 				}
 				this.messages.push(...data.messages.map(this.format_message));
