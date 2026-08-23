@@ -1,7 +1,7 @@
 function chat_support() {
 	return {
 		socket: null,
-		open_chat_bubble: true,
+		open_chat_bubble: false,
 		client_uuid: localStorage.getItem('client_uuid') || null,
 		new_message: '',
 		connected: false,
