@@ -4,8 +4,11 @@ from flask_login import current_user
 from extensions.live_messages.forms.start_live_chat import StartLiveChatForm
 from extensions.live_messages.models import LiveChatClient, Messages
 from core.extensions import db
+from flask_mail import Message
+from core.extensions import mail
 from flask_socketio import emit, join_room, leave_room
-from extensions.live_messages.utils.messages import format_time, get_client_recent_message_data, is_client_uuid_valid, get_all_clients, get_unread_messages_count, mark_client_messages_read, get_message_history, serialize_client, serialize_message
+from extensions.live_messages.utils.messages import is_client_uuid_valid, get_all_clients, mark_client_messages_read, get_message_history, serialize_client, serialize_message
+from core.models.users import User, Role, UserRole
 
 ALLOWED_ROLES = ['Administrator', 'Support Agent']
 CONNECTED_USERS = {}
@@ -179,6 +182,22 @@ def handle_send_message(data):
     db.session.add(new_message)
     db.session.commit()
 
+    if sender == 'client':
+        admin_count = 0
+        for user in CONNECTED_USERS.values():
+            if user.get('type') == 'admin':
+                admin_count += 1
+        if admin_count == 0:
+            agent_roles = Role.query.filter(Role.name.in_(ALLOWED_ROLES)).all()
+            agent_users = User.query.join(UserRole).filter(UserRole.role_id.in_([role.id for role in agent_roles])).all()
+            for agent in agent_users:
+                try:
+                    message = Message(f"New Message from {client.fullname}", recipients=[agent.email])
+                    message.body = f"Hello {agent.firstname},\n\nA new live chat message has been received from {client.fullname}.\n\nPlease log in to the admin dashboard to respond.\n\nAutomatically generated message, please do not reply."
+                    mail.send(message)
+                except Exception as e:
+                    pass # continue without crashing if email fails to send
+                
     emit('send_message', {
         'success': True,
         'messages': [serialize_message(new_message)]
