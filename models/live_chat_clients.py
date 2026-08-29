@@ -10,7 +10,8 @@ class LiveChatClient(db.Model):
     fullname = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(50), nullable=False)
     phone_number = db.Column(db.String(11), nullable=False)
-
+    is_ended = db.Column(db.Boolean, default=False, nullable=False)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
