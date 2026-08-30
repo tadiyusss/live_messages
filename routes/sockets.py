@@ -15,25 +15,78 @@ _connected_users = dict()
 
 @socketio.on('connect')
 def handle_connect():
-    """
-    Handle a new socket connection. If the user is logged in and has the appropriate role, add them to the admin room and track their connection.
-    """
 
     if not current_user.is_authenticated:
         _connected_users[request.sid] = {
             "type": "client",
             "current_room": None
         }
-        print(f"Anonymous Client Connected: {request.sid}")
         return
 
-    if any(role.role.name in ALLOWED_ROLES for role in current_user.user_roles):
+    if not any(role.role.name in ALLOWED_ROLES for role in current_user.user_roles):
         _connected_users[request.sid] = {
-            "type": "agent",
+            "type": "client",
             "current_room": None
         }
-        print(f"Agent Connected: {current_user.username} (SID: {request.sid})")
         return
 
+    _connected_users[request.sid] = {
+        "type": "admin",
+        "current_room": None
+    }
+
+
+    for sid in _connected_users.keys():
+        print(f"Connected User: {sid}, Type: {_connected_users[sid]['type']}, Current Room: {_connected_users[sid]['current_room']}")
     
+@socketio.on('disconnect')
+def handle_disconnect():
+    if request.sid in _connected_users:
+        user_info = _connected_users.pop(request.sid)
+        print(f"{user_info['type'].capitalize()} Disconnected: {request.sid}")
+
+
+@socketio.on('new-client')
+def handle_new_client(data):
+    form = StartLiveChatForm(data=data, meta={'csrf': False})
+
+    if not form.validate():
+        emit('new-client', {'success': False, 'error': 'Invalid form data.', 'errors': form.errors})
+        return
+
+    new_client = LiveChatClient(
+        fullname=form.fullname.data,
+        email=form.email.data,
+        phone_number=form.phone_number.data
+    )
+    db.session.add(new_client)
+    db.session.commit()
+
+    _connected_users[request.sid] = {
+        "type": "client",
+        "current_room": new_client.uuid
+    }
+
+    emit('new-client', {'success': True, 'client': serialize_client(new_client)}, room=request.sid)
+
+@socketio.on('validate-client-uuid')
+def handle_validate_client_uuid(data):
+    client_uuid = data.get('client_uuid')
+    if not client_uuid:
+        emit('validate-client-uuid', {'success': False, 'error': 'Client UUID is required.'}, room=request.sid)
+        return
+
+    is_valid = is_client_uuid_valid(client_uuid)
+
+    if not is_valid:
+        emit('validate-client-uuid', {'success': False}, room=request.sid)
+        return
+
+    _connected_users[request.sid] = {
+        "type": "client",
+        "current_room": client_uuid
+    }
     
+    history = get_message_history(client_uuid)
+    emit('validate-client-uuid', {'success': True}, room=request.sid)
+    emit('get-history', {'success': True, 'messages': history}, room=request.sid)

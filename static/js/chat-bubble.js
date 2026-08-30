@@ -22,7 +22,7 @@ function chat_support() {
 		},
 
 		start_chat() {
-			this.socket.emit('start_chat', this.start_chat_form_data);
+			this.socket.emit('new-client', this.start_chat_form_data);
 		},
 
 		send_message() {
@@ -62,7 +62,7 @@ function chat_support() {
 			this.socket.on('connect', () => {
 				this.connected = true;
 				if (this.client_uuid) {
-					this.socket.emit('validate_client_uuid', { client_uuid: this.client_uuid });
+					this.socket.emit('validate-client-uuid', { client_uuid: this.client_uuid });
 				}
 			});
 
@@ -70,7 +70,7 @@ function chat_support() {
 				this.connected = false;
 			});
 
-			this.socket.on('validate_client_uuid', (data) => {
+			this.socket.on('validate-client-uuid', (data) => {
 				if (data.success === false) {
 					localStorage.removeItem('client_uuid');
 					this.client_uuid = null;
@@ -78,16 +78,16 @@ function chat_support() {
 				}
 			});
 
-			this.socket.on('start_chat', (data) => {
+			this.socket.on('new-client', (data) => {
 				if (data.success === false) {
 					this.start_chat_form_errors = data.errors;
 					return;
 				}
-				this.client_uuid = data.client_uuid;
+				this.client_uuid = data.client.uuid;
 				localStorage.setItem('client_uuid', this.client_uuid);
 			});
 
-			this.socket.on('get_history', (data) => {
+			this.socket.on('get-history', (data) => {
 				if (data.success === false) {
 					console.error('Error loading message history:', data.error);
 					return;

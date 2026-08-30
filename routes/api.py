@@ -11,7 +11,7 @@ from .. import bp
 from ..forms.send_file import SendFileForm
 from ..models import LiveChatClient, Messages
 from ..utils.messages import serialize_client, serialize_message
-from .sockets import ALLOWED_ROLES, ADMIN_ROOM, CONNECTED_USERS
+from .sockets import ALLOWED_ROLES
 
 IMAGE_EXTENSIONS = ('png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp')
 
@@ -34,10 +34,7 @@ def upload_file():
     user_roles = [user_role.role.name for user_role in current_user.user_roles] if current_user.is_authenticated else []
     sender = 'agent' if any(role in ALLOWED_ROLES for role in user_roles) else 'client'
 
-    is_already_being_viewed = any(
-        user.get('type') == 'admin' and user.get('current_room') == client_uuid
-        for user in CONNECTED_USERS.values()
-    )
+    is_already_being_viewed = True
 
     filename = secure_filename(form.file.data.filename) or 'file'
     extension = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
@@ -68,6 +65,6 @@ def upload_file():
 
     socketio.emit('sidebar_update', {
         'client': serialize_client(client),
-    }, room=ADMIN_ROOM)
+    })
 
     return jsonify({'success': True, 'message': serialize_message(new_message)})

@@ -11,6 +11,8 @@ class LiveChatClient(db.Model):
     email = db.Column(db.String(50), nullable=False)
     phone_number = db.Column(db.String(11), nullable=False)
     is_ended = db.Column(db.Boolean, default=False, nullable=False)
+    agent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    agent = db.relationship('User', backref=db.backref('assigned_clients', lazy=True))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
