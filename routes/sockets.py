@@ -7,8 +7,13 @@ from core.extensions import db
 from flask_mail import Message
 from core.extensions import mail
 from flask_socketio import emit, join_room, leave_room
-from extensions.live_messages.utils.messages import is_client_uuid_valid, get_all_clients, mark_client_messages_read, get_message_history, serialize_client, serialize_message, get_all_unaccommodated_clients
+from extensions.live_messages.utils.messages import is_client_assigned, is_client_uuid_valid, get_all_clients, mark_client_messages_read, get_message_history, serialize_client, serialize_message, get_all_unassigned_clients, get_all_clients_assigned_to_agent
 from core.models.users import User, Role, UserRole
+
+def debug(message):
+    bar = '-' * 50
+    print(f"[DEBUG] {message}")
+    print(f"[DEBUG] {bar}")
 
 ADMIN_ROOM = 'Administrators'
 ALLOWED_ROLES = ['Administrator', 'Support Agent']
@@ -18,6 +23,7 @@ _connected_users = dict()
 def handle_connect():
 
     if not current_user.is_authenticated:
+        debug(f"Unauthenticated user connected with SID: {request.sid}")
         _connected_users[request.sid] = {
             "type": "client",
             "current_room": None
@@ -25,6 +31,7 @@ def handle_connect():
         return
 
     if not any(role.role.name in ALLOWED_ROLES for role in current_user.user_roles):
+        debug(f"User connected with SID: {request.sid} is not an allowed role.")
         _connected_users[request.sid] = {
             "type": "client",
             "current_room": None
@@ -35,15 +42,18 @@ def handle_connect():
         "type": "admin",
         "current_room": None
     }
+
     join_room(ADMIN_ROOM)
-    unaccommodated_clients = [serialize_client(client) for client in get_all_unaccommodated_clients()]
+    unaccommodated_clients = [serialize_client(client) for client in get_all_unassigned_clients()]
     emit('unaccommodated-clients', {'success': True, 'clients': unaccommodated_clients})
+    emit('clients-data', {'success': True, 'clients': [serialize_client(client) for client in get_all_clients_assigned_to_agent(current_user.id)]}, room=request.sid)
+    debug(f"New Agent connected with SID: {request.sid}.")
+
+
 @socketio.on('disconnect')
 def handle_disconnect():
-    if request.sid in _connected_users:
-        user_info = _connected_users.pop(request.sid)
-        print(f"{user_info['type'].capitalize()} Disconnected: {request.sid}")
-
+    sid = request.sid
+    _connected_users.pop(sid, None)
 
 @socketio.on('new-client')
 def handle_new_client(data):
@@ -91,7 +101,84 @@ def handle_validate_client_uuid(data):
     history = get_message_history(client_uuid)
     emit('validate-client-uuid', {'success': True}, room=request.sid)
     emit('get-history', {'success': True, 'messages': history}, room=request.sid)
+    join_room(client_uuid)
+
+@socketio.on('accept-client')
+def handle_accept_client(data):
+    client_uuid = data.get('client_uuid')
+
+
+    if request.sid not in _connected_users:
+        emit('accept-client', {'success': False, 'error': 'You are not connected.'})
+        return
+
+    if _connected_users[request.sid]['type'] != 'admin':
+        emit('accept-client', {'success': False, 'error': 'You are not authorized to accept clients.'})
+        return
+
+    if not is_client_uuid_valid(client_uuid):
+        emit('accept-client', {'success': False, 'error': 'Invalid client UUID.'})
+        return
+
+    if is_client_assigned(client_uuid):
+        emit('accept-client', {'success': False, 'error': 'Client is already assigned to another agent.', 'assigned_agent': LiveChatClient.query.filter_by(uuid=client_uuid).first().agent.firstname})
+        return
+
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    client.agent_id = current_user.id
+    db.session.commit()
+
+    emit('accept-client', {'success': True, 'client': serialize_client(client)}, room=request.sid)
+    emit('client-assigned', {'success': True, 'client': serialize_client(client), 'agent': current_user.id}, room=ADMIN_ROOM, include_self=False)
+
+@socketio.on('get-history')
+def handle_get_history(data):
+    client_uuid = data.get('client_uuid')
+
+    if not client_uuid:
+        emit('get-history', {'success': False, 'error': 'Client UUID is required.'}, room=request.sid)
+        return
+
+    if not is_client_uuid_valid(client_uuid):
+        emit('get-history', {'success': False, 'error': 'Invalid client UUID.'}, room=request.sid)
+        return
+
+    history = get_message_history(client_uuid)
+    mark_client_messages_read(client_uuid)
+    emit('get-history', {'success': True, 'messages': history}, room=request.sid)
+    
+    join_room(client_uuid)
 
 @socketio.on('send-message')
 def handle_send_message(data):
-    pass
+    client_uuid = data.get('client_uuid')
+    content = data.get('content')
+
+    if not client_uuid or not content:
+        emit('send-message', {'success': False, 'error': 'Client UUID and content are required.'}, room=request.sid)
+        return
+
+    if not is_client_uuid_valid(client_uuid):
+        emit('send-message', {'success': False, 'error': 'Invalid client UUID.'}, room=request.sid)
+        return
+
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    if not client:
+        emit('send-message', {'success': False, 'error': 'Client not found.'}, room=request.sid)
+        return
+
+    sender_type = 'agent' if _connected_users[request.sid]['type'] == 'admin' else 'client'
+    message = Messages(
+        client_id=client.id,
+        sender=sender_type,
+        content=content,
+        content_type='text',
+        unread=True
+    )
+    db.session.add(message)
+    db.session.commit()
+
+    serialized_message = serialize_message(message)
+
+    debug(f"Message sent from {sender_type} in room {client_uuid}: {content}")
+    emit('send-message', {'success': True, 'message': serialized_message}, room=client_uuid)

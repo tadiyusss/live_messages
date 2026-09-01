@@ -13,20 +13,13 @@
 			{% include 'components/messaging-content.html' %}
 			{% include 'components/messaging-upload-modal.html' %}
 			<div class="fixed top-6 right-6 z-100 flex flex-col gap-3">
-				<div class="border border-gray-200 bg-white shadow-sm text-sm rounded-lg px-4 py-3 max-w-xl">
-					<div class="flex items-center justify-between">
-						<div>
-							<h6 class="font-medium text-lg">New User</h6>
-							<p class="text-sm">Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto corrupti eos asperiores qui. Aliquam aperiam itaque, sint impedit, sapiente iure eum corrupti aspernatur facere qui minus ut vitae molestiae expedita.</p>
-							<button class="px-2 py-1 mt-2 bg-green-700 hover:bg-green-800 transition cursor-pointer text-white rounded">Accept</button>
-						</div>
-						<button type="button" class="cursor-pointer">
-							<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
+				<template x-for="client in new_clients" :key="client.uuid">
+					<div class="border border-gray-200 bg-white shadow-sm text-sm rounded-lg px-4 py-3 max-w-xl">
+						<h6 class="font-medium text-md"><span class="italic" x-text="client.fullname"></span> Sent you a message</h6>
+						<p class="text-xs text-gray-500">You have a new inquiry waiting for your response.</p>
+						<button @click="accept_client(client.uuid)" class="px-2 py-1 mt-1 bg-green-700 hover:bg-green-800 transition cursor-pointer text-xs text-white rounded">Accept</button>
 					</div>
-				</div>
+				</template>
 			</div>
 		</div>
 		<script src="{{ url_for('live_messages.static', filename='js/socketio.js') }}"></script>

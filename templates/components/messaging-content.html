@@ -17,6 +17,7 @@
 				</button>
 				<div x-show="dropdown_open" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95 -translate-y-1" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" x-cloak class="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-zinc-200 z-20 overflow-hidden">
 					<div class="py-1">
+						<a :href="selected_client && selected_client.uuid ? `/dashboard/live-messages/end/${selected_client.uuid}` : '#'" @click="dropdown_open = false" class="block px-4 py-2 text-sm hover:bg-zinc-100 hover:text-gray-800 transition">End Conversation</a>
 						<a :href="selected_client && selected_client.uuid ? `/dashboard/live-messages/delete/${selected_client.uuid}` : '#'" @click="dropdown_open = false" class="block px-4 py-2 text-sm text-red-600 hover:bg-zinc-100 hover:text-red-900 transition">Delete Conversation</a>
 					</div>
 				</div>

@@ -11,7 +11,7 @@ function chat_app() {
 		clients: [],
 		connected: false,
 		messages: [],
-
+		new_clients: [],
 		scroll_to_bottom() {
 			const el = this.$refs.messagesContainer;
 			if (el) el.scrollTop = el.scrollHeight;
@@ -27,7 +27,7 @@ function chat_app() {
 			this.selected_client = client;
 			client.unread_count = 0;
 			this.mobile_view = 'chat';
-			this.socket.emit('get_history', { client_uuid: client.uuid });
+			this.socket.emit('get-history', { client_uuid: client.uuid });
 			this.$nextTick(() => {
 				this.scroll_to_bottom();
 			});
@@ -36,7 +36,7 @@ function chat_app() {
 		send_message() {
 			const text = this.new_message.trim();
 			if (!text || !this.selected_client) return;
-			this.socket.emit('send_message', { client_uuid: this.selected_client.uuid, content: text });
+			this.socket.emit('send-message', { client_uuid: this.selected_client.uuid, content: text });
 			this.new_message = '';
 		},
 
@@ -75,6 +75,9 @@ function chat_app() {
 				this.uploading_file = false;
 			}
 		},
+		accept_client(client_uuid) {
+			this.socket.emit('accept-client', { client_uuid: client_uuid });
+		},
 
 		init() {
 			this.socket = io();
@@ -87,7 +90,38 @@ function chat_app() {
 				this.connected = false;
 			});
 
-			this.socket.on('clients_data', (data) => {
+			this.socket.on('unaccommodated-clients', (data) => {
+				new_clients = data.clients;
+				if (new_clients.length > 0) {
+					this.new_clients = new_clients;
+				}
+			})
+
+			this.socket.on('new-client', (data) => {
+				client = data.client;
+				if (!this.new_clients.some(c => c.uuid === client.uuid) && !this.clients.some(c => c.uuid === client.uuid)) {
+					this.new_clients.unshift(client);
+				}
+			})
+
+			this.socket.on('client-assigned', (data) => {
+				const client = data.client;
+				this.new_clients = this.new_clients.filter(c => c.uuid !== client.uuid);
+			})
+
+			this.socket.on('accept-client', (data) => {
+				if (data.success === false) {
+					alert(`Error accepting client: ${data.error}`);
+				}
+
+				client = data.client
+				this.new_clients = this.new_clients.filter(c => c.uuid !== client.uuid);
+				if (!this.clients.some(c => c.uuid === client.uuid)) {
+					this.clients.unshift(client);
+				}
+			});
+
+			this.socket.on('clients-data', (data) => {
 				this.clients = data.clients;
 			});
 
@@ -102,7 +136,7 @@ function chat_app() {
 				existing_client.unread_count = updated_client.unread_count;
 			});
 
-			this.socket.on('get_history', (data) => {
+			this.socket.on('get-history', (data) => {
 				if (data.success === false) {
 					console.error('Error loading message history:', data.error);
 					return;
@@ -113,19 +147,29 @@ function chat_app() {
 				});
 			});
 
-			this.socket.on('send_message', (data) => {
+			this.socket.on('sidebar-update', (data) => {
+				const updated_client = data.client;
+				const existing_client = this.clients.find((client) => client.uuid === updated_client.uuid);
+				if (!existing_client) {
+					this.clients.unshift(updated_client);
+					return;
+				}
+				existing_client.last_message = updated_client.last_message;
+				existing_client.unread_count = updated_client.unread_count;
+			})
+
+			this.socket.on('send-message', (data) => {
 				if (data.success === false) {
 					console.error('Error sending message:', data.error);
 					return;
 				}
-				for (const message of data.messages) {
-					if (this.selected_client && message.client_uuid === this.selected_client.uuid) {
-						this.messages.push(message);
-					}
+
+				if (this.selected_client && this.selected_client.uuid === data.message.client_uuid) {
+					this.messages.push(data.message);
+					this.$nextTick(() => {
+						this.scroll_to_bottom();
+					});
 				}
-				this.$nextTick(() => {
-					this.scroll_to_bottom();
-				});
 			});
 		}
 	};

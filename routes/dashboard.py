@@ -23,4 +23,12 @@ def delete_conversation(client_uuid):
     db.session.delete(client)
     db.session.commit()
     return redirect(url_for('live_messages.messages'))
-    
+
+@bp.route('/dashboard/live-messages/end/<string:client_uuid>')
+@login_required
+@roles_required(['Administrator', 'Support Agent'])
+def end_conversation(client_uuid):
+    client = LiveChatClient.query.filter_by(uuid=client_uuid, is_ended=False).first_or_404()
+    client.is_ended = True
+    db.session.commit()
+    return redirect(url_for('live_messages.messages'))

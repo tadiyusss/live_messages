@@ -2,6 +2,7 @@ from extensions.live_messages.models import LiveChatClient
 from extensions.live_messages.models import Messages
 from core.extensions import db
 from datetime import datetime, timedelta
+
 def is_client_uuid_valid(uuid):
     return LiveChatClient.query.filter_by(uuid=uuid).first() is not None
 
@@ -19,11 +20,14 @@ def format_time(dt):
 def get_all_clients():
     return LiveChatClient.query.all()
 
+def get_all_clients_assigned_to_agent(agent_id):
+    return LiveChatClient.query.filter_by(agent_id=agent_id, is_ended=False).all()
+
 def get_unread_messages_count(client_uuid):
     return Messages.query.join(LiveChatClient).filter(LiveChatClient.uuid == client_uuid, Messages.unread.is_(True)).count()
 
 def mark_client_messages_read(client_uuid):
-    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    client = LiveChatClient.query.filter_by(uuid=client_uuid, is_ended=False).first()
     if not client:
         return
     Messages.query.filter_by(client_id=client.id, unread=True).update({'unread': False})
@@ -33,7 +37,7 @@ def get_file_display_name(filename):
     return filename.split('_', 1)[1] if '_' in filename else filename
 
 def get_client_recent_message_data(client_uuid):
-    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    client = LiveChatClient.query.filter_by(uuid=client_uuid, is_ended=False).first()
     if not client:
         return None
 
@@ -86,8 +90,15 @@ def serialize_client(client):
         'unread_count': get_unread_messages_count(client.uuid),
     }
 
-def get_all_unaccommodated_clients():
+def get_all_unassigned_clients():
     """
     Fetch all clients that have not been assigned to an agent yet.
     """
     return LiveChatClient.query.filter_by(agent_id=None, is_ended=False).all()
+
+def is_client_assigned(client_uuid):
+    """
+    Check if a client has been assigned to an agent.
+    """
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    return client.agent_id

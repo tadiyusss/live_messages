@@ -58,12 +58,12 @@ def upload_file():
     db.session.add(new_message)
     db.session.commit()
 
-    socketio.emit('send_message', {
+    socketio.emit('send-message', {
         'success': True,
-        'messages': [serialize_message(new_message)]
+        'message': serialize_message(new_message)
     }, room=client_uuid)
 
-    socketio.emit('sidebar_update', {
+    socketio.emit('sidebar-update', {
         'client': serialize_client(client),
     })
 

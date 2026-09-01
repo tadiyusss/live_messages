@@ -102,7 +102,7 @@ function chat_support() {
 					this.new_message = data.message;
 					return;
 				}
-				this.messages.push(...data.messages.map(this.format_message));
+				this.messages.push(this.format_message(data.message));
 				this.scroll_to_bottom();
 			});
 		}
