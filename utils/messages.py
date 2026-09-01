@@ -85,3 +85,9 @@ def serialize_client(client):
         'last_message': get_client_recent_message_data(client.uuid),
         'unread_count': get_unread_messages_count(client.uuid),
     }
+
+def get_all_unaccommodated_clients():
+    """
+    Fetch all clients that have not been assigned to an agent yet.
+    """
+    return LiveChatClient.query.filter_by(agent_id=None, is_ended=False).all()

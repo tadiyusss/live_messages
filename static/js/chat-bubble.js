@@ -28,7 +28,7 @@ function chat_support() {
 		send_message() {
 			const text = this.new_message.trim();
 			if (!text) return;
-			this.socket.emit('send_message', { client_uuid: this.client_uuid, content: text });
+			this.socket.emit('send-message', { client_uuid: this.client_uuid, content: text });
 			this.new_message = '';
 		},
 
@@ -96,7 +96,7 @@ function chat_support() {
 				this.scroll_to_bottom();
 			});
 
-			this.socket.on('send_message', (data) => {
+			this.socket.on('send-message', (data) => {
 				if (data.success === false) {
 					console.error('Error sending message:', data.error);
 					this.new_message = data.message;
