@@ -4,7 +4,7 @@ from core.extensions import db
 from datetime import datetime, timedelta
 
 def is_client_uuid_valid(uuid):
-    return LiveChatClient.query.filter_by(uuid=uuid).first() is not None
+    return LiveChatClient.query.filter_by(uuid=uuid, is_ended=False).first() is not None
 
 def format_time(dt):
     if dt.date() == datetime.now().date():
@@ -102,3 +102,9 @@ def is_client_assigned(client_uuid):
     """
     client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
     return client.agent_id
+
+def is_client_online(connected_users, uuid):
+    for user in connected_users:
+        if uuid == connected_users[user].get('current_room', None):
+            return True
+    return False

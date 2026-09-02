@@ -105,6 +105,31 @@ function chat_support() {
 				this.messages.push(this.format_message(data.message));
 				this.scroll_to_bottom();
 			});
+
+			this.socket.on('end-conversation', (data) => {
+				if (data.success === false) {
+					console.error('Error ending conversation:', data.error);
+					return;
+				}
+				this.messages = [];
+				this.client_uuid = null;
+				localStorage.removeItem('client_uuid');
+			});
+
+			this.socket.on('delete-conversation', (data) => {
+				if (data.success === false) {
+					console.error('Error deleting conversation:', data.error);
+					return;
+				}
+				this.messages = [];
+				this.client_uuid = null;
+				localStorage.removeItem('client_uuid');
+				this.start_chat_form_data = {
+					fullname: '',
+					email: '',
+					phone_number: '',
+				}
+			});
 		}
 	};
 }

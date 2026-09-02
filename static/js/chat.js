@@ -38,6 +38,7 @@ function chat_app() {
 			if (!text || !this.selected_client) return;
 			this.socket.emit('send-message', { client_uuid: this.selected_client.uuid, content: text });
 			this.new_message = '';
+
 		},
 
 		handle_file_selected(event) {
@@ -77,6 +78,13 @@ function chat_app() {
 		},
 		accept_client(client_uuid) {
 			this.socket.emit('accept-client', { client_uuid: client_uuid });
+		},
+
+		delete_conversation(client_uuid) {
+			this.socket.emit('delete-conversation', { client_uuid: client_uuid });
+		},
+		end_conversation(client_uuid) {
+			this.socket.emit('end-conversation', { client_uuid: client_uuid });
 		},
 
 		init() {
@@ -142,6 +150,7 @@ function chat_app() {
 					return;
 				}
 				this.messages = data.messages;
+				this.selected_client['online'] = data.online
 				this.$nextTick(() => {
 					this.scroll_to_bottom();
 				});
@@ -158,6 +167,46 @@ function chat_app() {
 				existing_client.unread_count = updated_client.unread_count;
 			})
 
+			this.socket.on('user-disconnected', (data) => {
+				const client = this.clients.find((c) => c.uuid === data.uuid);
+				if (client) {
+					client.online = false;
+				}
+			})
+
+			this.socket.on('user-connected', (data) => {
+				const client = this.clients.find((c) => c.uuid === data.uuid);
+				if (client) {
+					client.online = true;
+				}
+			});
+
+			this.socket.on('delete-conversation', (data) => {
+				if (data.success === false) {
+					console.error('Error deleting conversation:', data.error);
+					return;
+				}
+
+				this.clients = this.clients.filter(c => c.uuid !== data.client_uuid);
+				if (this.selected_client && this.selected_client.uuid === data.client_uuid) {
+					this.selected_client = null;
+					this.messages = [];
+				}
+			});
+
+			this.socket.on('end-conversation', (data) => {
+				if (data.success === false) {
+					console.error('Error ending conversation:', data.error);
+					return;
+				}
+				
+				this.clients = this.clients.filter(c => c.uuid !== data.client_uuid);
+				if (this.selected_client && this.selected_client.uuid === data.client_uuid) {
+					this.selected_client = null;
+					this.messages = [];
+				}
+			});
+
 			this.socket.on('send-message', (data) => {
 				if (data.success === false) {
 					console.error('Error sending message:', data.error);
@@ -169,7 +218,17 @@ function chat_app() {
 					this.$nextTick(() => {
 						this.scroll_to_bottom();
 					});
+					this.socket.emit('read-message', { client_uuid: this.selected_client.uuid });
 				}
+
+				const client = this.clients.find((c) => c.uuid === data.message.client_uuid);
+				if (client) {
+					client.last_message = data.message;
+					if (!this.selected_client || this.selected_client.uuid !== client.uuid) {
+						client.unread_count = (client.unread_count || 0) + 1;
+					}
+				}
+
 			});
 		}
 	};
