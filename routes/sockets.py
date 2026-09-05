@@ -8,7 +8,6 @@ from flask_mail import Message
 from core.extensions import mail
 from flask_socketio import emit, join_room, leave_room
 from extensions.live_messages.utils.messages import is_client_assigned, is_client_uuid_valid, get_all_clients, mark_client_messages_read, get_message_history, serialize_client, serialize_message, get_all_unassigned_clients, get_all_clients_assigned_to_agent, is_client_online
-from core.models.users import User, Role, UserRole
 
 ADMIN_ROOM = 'Administrators'
 ALLOWED_ROLES = ['Administrator', 'Support Agent']
@@ -145,7 +144,8 @@ def handle_get_history(data):
 
     history = get_message_history(client_uuid)
     mark_client_messages_read(client_uuid)
-    emit('get-history', {'success': True, 'messages': history, 'online': is_client_online(_connected_users, client_uuid)}, room=request.sid)
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
+    emit('get-history', {'success': True, 'messages': history, 'online': is_client_online(_connected_users, client_uuid), 'is_ended': client.is_ended}, room=request.sid)
     join_room(client_uuid)
 
 @socketio.on('read-message')

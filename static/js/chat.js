@@ -151,6 +151,7 @@ function chat_app() {
 				}
 				this.messages = data.messages;
 				this.selected_client['online'] = data.online
+				this.selected_client['is_ended'] = data.is_ended
 				this.$nextTick(() => {
 					this.scroll_to_bottom();
 				});
@@ -227,6 +228,8 @@ function chat_app() {
 					if (!this.selected_client || this.selected_client.uuid !== client.uuid) {
 						client.unread_count = (client.unread_count || 0) + 1;
 					}
+					this.clients = this.clients.filter(c => c.uuid !== client.uuid);
+					this.clients.unshift(client);
 				}
 
 			});

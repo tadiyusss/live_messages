@@ -4,7 +4,7 @@ from core.extensions import db
 from datetime import datetime, timedelta
 
 def is_client_uuid_valid(uuid):
-    return LiveChatClient.query.filter_by(uuid=uuid, is_ended=False).first() is not None
+    return LiveChatClient.query.filter_by(uuid=uuid).first() is not None
 
 def format_time(dt):
     if dt.date() == datetime.now().date():
@@ -20,14 +20,17 @@ def format_time(dt):
 def get_all_clients():
     return LiveChatClient.query.all()
 
+def sort_clients_by_last_message(clients: list[LiveChatClient]):
+    return sorted(clients, key=lambda c: c.last_message.created_at if c.last_message else datetime.min, reverse=True)
+
 def get_all_clients_assigned_to_agent(agent_id):
-    return LiveChatClient.query.filter_by(agent_id=agent_id, is_ended=False).all()
+    return sort_clients_by_last_message(LiveChatClient.query.filter_by(agent_id=agent_id).all())
 
 def get_unread_messages_count(client_uuid):
     return Messages.query.join(LiveChatClient).filter(LiveChatClient.uuid == client_uuid, Messages.unread.is_(True)).count()
 
 def mark_client_messages_read(client_uuid):
-    client = LiveChatClient.query.filter_by(uuid=client_uuid, is_ended=False).first()
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
     if not client:
         return
     Messages.query.filter_by(client_id=client.id, unread=True).update({'unread': False})
@@ -37,7 +40,7 @@ def get_file_display_name(filename):
     return filename.split('_', 1)[1] if '_' in filename else filename
 
 def get_client_recent_message_data(client_uuid):
-    client = LiveChatClient.query.filter_by(uuid=client_uuid, is_ended=False).first()
+    client = LiveChatClient.query.filter_by(uuid=client_uuid).first()
     if not client:
         return None
 
@@ -88,6 +91,7 @@ def serialize_client(client):
         'phone_number': client.phone_number,
         'last_message': get_client_recent_message_data(client.uuid),
         'unread_count': get_unread_messages_count(client.uuid),
+        'is_ended': client.is_ended
     }
 
 def get_all_unassigned_clients():
