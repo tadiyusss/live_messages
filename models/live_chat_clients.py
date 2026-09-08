@@ -19,3 +19,7 @@ class LiveChatClient(db.Model):
     @property
     def last_message(self):
         return Messages.query.filter_by(client_id=self.id).order_by(Messages.created_at.desc()).first()
+
+    @property
+    def unread_messages_count(self):
+        return Messages.query.filter_by(client_id=self.id, unread=True).count()
