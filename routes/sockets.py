@@ -4,13 +4,10 @@ from flask_login import current_user
 from extensions.live_messages.forms.start_live_chat import StartLiveChatForm
 from extensions.live_messages.models import LiveChatClient, Messages
 from core.extensions import db
-from flask_mail import Message
-from core.extensions import mail
 from flask_socketio import emit, join_room, leave_room
 from extensions.live_messages.utils.messages import (
     is_client_assigned,
     is_client_uuid_valid,
-    get_all_clients,
     mark_client_messages_read,
     get_message_history,
     serialize_client,
@@ -18,6 +15,8 @@ from extensions.live_messages.utils.messages import (
     get_all_unassigned_clients,
     get_all_clients_assigned_to_agent,
     is_client_online,
+    send_message_notification,
+    send_new_client_notification_to_al_agents
 )
 
 ADMIN_ROOM = 'Administrators'
@@ -48,6 +47,19 @@ def _can_access_client(user, client_uuid):
 def _deny(event, error='Unauthorized.'):
     emit(event, {'success': False, 'error': error}, room=request.sid)
 
+def _is_agent_online(agent_id: int) -> bool:
+    for sid in _connected_users:
+        user_data = _connected_users.get(sid, None)
+        if user_data.get("id", None) == agent_id:
+            return True 
+    return False
+
+def _has_online_agent() -> bool:
+    for sid in _connected_users:
+        user_data = _connected_users.get(sid, None)
+        if user_data.get("type", None) == "admin":
+            return True
+    return False
 
 @socketio.on('connect')
 def handle_connect():
@@ -68,7 +80,8 @@ def handle_connect():
 
     _connected_users[request.sid] = {
         "type": "admin",
-        "current_room": None
+        "current_room": None,
+        "id": current_user.id
     }
 
     join_room(ADMIN_ROOM)
@@ -119,6 +132,8 @@ def handle_new_client(data):
     emit('new-client', {'success': True, 'client': serialize_client(new_client)}, room=request.sid)
     emit('new-client', {'success': True, 'client': serialize_client(new_client)}, room=ADMIN_ROOM)
 
+    if not _has_online_agent():
+        send_new_client_notification_to_al_agents()
 
 @socketio.on('validate-client-uuid')
 def handle_validate_client_uuid(data):
@@ -281,6 +296,8 @@ def handle_send_message(data):
         emit('send-message', payload, room=request.sid)
 
         if client.agent_id:
+            if _is_agent_online(client.agent_id) == False:
+                send_message_notification(client.agent_id, client.fullname)
             emit('send-message', payload, room=client.agent_id)
         else:
             emit('send-message', payload, room=ADMIN_ROOM)

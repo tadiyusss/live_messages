@@ -2,6 +2,10 @@ from extensions.live_messages.models import LiveChatClient
 from extensions.live_messages.models import Messages
 from core.extensions import db
 from datetime import datetime, timedelta
+from core.models.users import Role, User, UserRole
+from flask_mail import Message
+from core.extensions import mail
+from flask import url_for
 
 def is_client_uuid_valid(uuid):
     return LiveChatClient.query.filter_by(uuid=uuid).first() is not None
@@ -112,3 +116,34 @@ def is_client_online(connected_users, uuid):
         if uuid == connected_users[user].get('current_room', None):
             return True
     return False
+
+def send_message_notification(user_id: int, client_name: str):
+    user = User.query.get(user_id)
+    if not user:
+        return False
+
+    if not user.email:
+        return False
+
+    message = Message(f"You have received a message from {client_name}.", recipients=[user.email])
+    message.body = f"Hello Agent,\n\nYou have received a message from {client_name}. Please login to {url_for('core.dashboard', _external=True)} to reply to your client."
+    mail.send(message)
+
+def send_new_client_notification_to_al_agents():
+    ALLOWED_ROLES = ['Administrator', 'Support Agent']
+    users = (
+        User.query
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .filter(Role.name.in_(ALLOWED_ROLES))
+        .distinct()
+        .all()
+    )
+
+    for user in users:
+        if not user.email:
+            continue
+        
+        message = Message("New Client Connected", recipients=[user.email])
+        message.body = f"Hello Agent,\n\nA new client has connected to the live chat. Please login to {url_for('core.dashboard', _external=True)} to view and respond to the client."
+        mail.send(message)
