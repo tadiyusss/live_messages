@@ -129,7 +129,7 @@ def send_message_notification(user_id: int, client_name: str):
     message.body = f"Hello Agent,\n\nYou have received a message from {client_name}. Please login to {url_for('core.dashboard', _external=True)} to reply to your client."
     mail.send(message)
 
-def send_new_client_notification_to_al_agents():
+def send_new_client_notification_to_al_agents(client_fullname):
     ALLOWED_ROLES = ['Administrator', 'Support Agent']
     users = (
         User.query
@@ -144,6 +144,6 @@ def send_new_client_notification_to_al_agents():
         if not user.email:
             continue
         
-        message = Message("New Client Connected", recipients=[user.email])
-        message.body = f"Hello Agent,\n\nA new client has connected to the live chat. Please login to {url_for('core.dashboard', _external=True)} to view and respond to the client."
+        message = Message(f"{client_fullname} has connected to the live chat.", recipients=[user.email])
+        message.body = f"Hello Agent,\n\n{client_fullname} has connected to the live chat. Please login to {url_for('core.dashboard', _external=True)} to view and respond to the client."
         mail.send(message)

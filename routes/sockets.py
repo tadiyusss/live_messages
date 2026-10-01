@@ -133,7 +133,7 @@ def handle_new_client(data):
     emit('new-client', {'success': True, 'client': serialize_client(new_client)}, room=ADMIN_ROOM)
 
     if not _has_online_agent():
-        send_new_client_notification_to_al_agents()
+        send_new_client_notification_to_al_agents(new_client.fullname)
 
 @socketio.on('validate-client-uuid')
 def handle_validate_client_uuid(data):
